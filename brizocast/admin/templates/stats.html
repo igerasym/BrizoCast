@@ -1,0 +1,60 @@
+{#
+  Dashboard / stats-health overview (Req 11.1, 11.2, 11.3).
+
+  Context:
+    stats : StatsView  (total_users, tier_counts: dict[str, int],
+                        total_subscriptions, total_spots,
+                        last_scheduler_run: datetime | None)
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<section class="stat-tiles">
+  <div class="card stat-tile">
+    <p class="muted">Total users</p>
+    <p class="stat-value">{{ stats.total_users }}</p>
+  </div>
+  <div class="card stat-tile">
+    <p class="muted">Total subscriptions</p>
+    <p class="stat-value">{{ stats.total_subscriptions }}</p>
+  </div>
+  <div class="card stat-tile">
+    <p class="muted">Total surf spots</p>
+    <p class="stat-value">{{ stats.total_spots }}</p>
+  </div>
+  <div class="card stat-tile">
+    <p class="muted">Last successful scheduler run</p>
+    <p class="stat-value">
+      {% if stats.last_scheduler_run %}{{ stats.last_scheduler_run.strftime("%Y-%m-%d %H:%M:%S %Z") }}{% else %}never{% endif %}
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Users per plan tier</h2>
+  {% if stats.tier_counts %}
+  <table>
+    <thead>
+      <tr>
+        <th>Plan tier</th>
+        <th>Users</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tier, count in stats.tier_counts.items() %}
+      <tr>
+        <td><strong>{{ tier }}</strong></td>
+        <td>{{ count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No plan tiers recorded yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

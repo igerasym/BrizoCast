@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}BrizoCast Admin{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <!-- Vendored HTMX (no CDN) to satisfy the self-only Content-Security-Policy. -->
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">BrizoCast Admin</a>
+    <nav class="main-nav">
+      <a href="/"{% if active_page == "dashboard" %} class="active"{% endif %}>Dashboard</a>
+      <a href="/users"{% if active_page == "users" %} class="active"{% endif %}>Users</a>
+      <a href="/subscriptions"{% if active_page == "subscriptions" %} class="active"{% endif %}>Subscriptions</a>
+      <a href="/spots"{% if active_page == "spots" %} class="active"{% endif %}>Spots</a>
+      <a href="/presets"{% if active_page == "presets" %} class="active"{% endif %}>Presets</a>
+      <a href="/forecast"{% if active_page == "forecast" %} class="active"{% endif %}>Forecast</a>
+      <a href="/feedback"{% if active_page == "feedback" %} class="active"{% endif %}>Feedback</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <div id="flash">
+      {% block flash %}
+        {% if flash %}
+          {% include "_partials/_flash.html" %}
+        {% endif %}
+      {% endblock %}
+    </div>
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,68 @@
+{#
+  Monetization flag + per-tier plan limits (Req 6.1, 6.2, 6.3, 6.5).
+
+  Context:
+    enabled   : bool                effective monetization flag
+    limits    : dict[str, PlanLimit] {tier: (max_subscriptions, notification_modes)}
+    tiers     : list[str]           [PLAN_TIER_FREE, PLAN_TIER_PAID]
+    all_modes : list[str]           every known notification-mode key (sorted)
+
+  Forms POST back with redirect-after-POST and a CSRF hidden field:
+    flag   -> POST /monetization/flag    (field: enabled)
+    limits -> POST /monetization/limits  (fields: free_max, free_modes,
+              paid_max, paid_modes — modes are comma-separated)
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<h1>Monetization</h1>
+
+<section class="card">
+  <h2>Monetization flag</h2>
+  <p class="muted">
+    Current status: <strong>{{ "Enabled" if enabled else "Disabled" }}</strong>
+  </p>
+  <form method="post" action="/monetization/flag">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+    <label for="enabled">Set monetization</label>
+    <select id="enabled" name="enabled">
+      <option value="true"{% if enabled %} selected{% endif %}>Enabled</option>
+      <option value="false"{% if not enabled %} selected{% endif %}>Disabled</option>
+    </select>
+    <p><button type="submit">Save flag</button></p>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Plan limits</h2>
+  <p class="muted">
+    Set each tier's maximum number of subscriptions and the available
+    notification modes (comma-separated). Known modes:
+    <code>{{ all_modes|join(", ") }}</code>.
+  </p>
+  {% set free = limits.get("free") %}
+  {% set paid = limits.get("paid") %}
+  <form method="post" action="/monetization/limits">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+    <h3>Free tier</h3>
+    <label for="free_max">Max subscriptions</label>
+    <input type="number" id="free_max" name="free_max" min="1"
+           value="{{ free.max_subscriptions if free else 1 }}" required>
+    <label for="free_modes">Notification modes</label>
+    <input type="text" id="free_modes" name="free_modes"
+           value="{{ free.notification_modes|sort|join(', ') if free else '' }}">
+
+    <h3>Paid tier</h3>
+    <label for="paid_max">Max subscriptions</label>
+    <input type="number" id="paid_max" name="paid_max" min="1"
+           value="{{ paid.max_subscriptions if paid else 1 }}" required>
+    <label for="paid_modes">Notification modes</label>
+    <input type="text" id="paid_modes" name="paid_modes"
+           value="{{ paid.notification_modes|sort|join(', ') if paid else '' }}">
+
+    <p><button type="submit">Save plan limits</button></p>
+  </form>
+</section>
+{% endblock %}

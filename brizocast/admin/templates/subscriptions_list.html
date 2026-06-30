@@ -1,0 +1,48 @@
+{#
+  All-subscriptions list (Req 3.1).
+
+  Context:
+    subscriptions : list[SubscriptionRow] (id, owner_telegram_id, activity,
+                    location_label, location_place, search_radius_km,
+                    notification_mode)
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<h1>Subscriptions</h1>
+
+{% if subscriptions %}
+<table>
+  <thead>
+    <tr>
+      <th>User (Telegram ID)</th>
+      <th>Activity</th>
+      <th>Location</th>
+      <th>Search radius</th>
+      <th>Notification mode</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sub in subscriptions %}
+    <tr>
+      <td>{{ sub.owner_telegram_id }}</td>
+      <td>{{ sub.activity }}</td>
+      <td>
+        {{ sub.location_label }}
+        {% if sub.location_place and sub.location_place != sub.location_label %}
+          <span class="muted">— {{ sub.location_place }}</span>
+        {% endif %}
+        <br><span class="muted" style="font-size:0.8em">{{ "%.4f"|format(sub.location_lat) }}, {{ "%.4f"|format(sub.location_lon) }}</span>
+      </td>
+      <td>{{ "%g"|format(sub.search_radius_km) }} km</td>
+      <td>{{ sub.notification_mode }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No subscriptions yet.</p>
+{% endif %}
+{% endblock %}

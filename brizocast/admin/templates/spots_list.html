@@ -1,0 +1,69 @@
+{#
+  Surf-spot catalogue with per-column live search (Req 4.1, 4.3, 4.4).
+
+  Context:
+    spots   : list[SurfSpot], filtered + sorted (country, region, name).
+    filters : {country, region, name, key} current filter values.
+
+  Spots are sourced from the bot's dataset (and, going forward, populated from
+  the forecast provider when users subscribe to an area), so there is no manual
+  "create" form here — only browse, search, edit, and delete.
+
+  The filter inputs live-update the table via HTMX (GET /spots/table); without
+  JavaScript the same form submits to /spots and reloads the page.
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<h1>Surf spots</h1>
+<p class="muted">
+  Browse and manage the surf-spot catalogue. Type in any column filter to narrow
+  the list (e.g. Country = “France”). Sorted by country, region, then name.
+</p>
+
+<form method="get" action="/spots" class="card">
+  {# Each input live-filters the table; hx-include sends all four values. #}
+  {% set hx = {
+    "get": "/spots/table",
+    "target": "#spots-table",
+    "trigger": "keyup changed delay:300ms, search",
+    "include": "closest form"
+  } %}
+  <div class="filters">
+    <label>Country
+      <input type="search" name="country" value="{{ filters.country }}"
+             placeholder="e.g. France"
+             hx-get="/spots/table" hx-target="#spots-table"
+             hx-trigger="keyup changed delay:300ms, search" hx-include="closest form">
+    </label>
+    <label>Region
+      <input type="search" name="region" value="{{ filters.region }}"
+             placeholder="e.g. Hossegor"
+             hx-get="/spots/table" hx-target="#spots-table"
+             hx-trigger="keyup changed delay:300ms, search" hx-include="closest form">
+    </label>
+    <label>Name
+      <input type="search" name="name" value="{{ filters.name }}"
+             placeholder="e.g. La Gravière"
+             hx-get="/spots/table" hx-target="#spots-table"
+             hx-trigger="keyup changed delay:300ms, search" hx-include="closest form">
+    </label>
+    <label>Identifier
+      <input type="search" name="key" value="{{ filters.key }}"
+             placeholder="e.g. hossegor"
+             hx-get="/spots/table" hx-target="#spots-table"
+             hx-trigger="keyup changed delay:300ms, search" hx-include="closest form">
+    </label>
+  </div>
+  <p>
+    <button type="submit">Filter</button>
+    <a class="btn secondary" href="/spots">Clear</a>
+  </p>
+</form>
+
+<div id="spots-table">
+  {% include "_partials/_spots_table.html" %}
+</div>
+{% endblock %}

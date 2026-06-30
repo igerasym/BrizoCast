@@ -1,0 +1,271 @@
+/* BrizoCast Admin — minimal, clean styling for nav, tables, and forms.
+   Self-hosted (no external fonts or CDNs) to satisfy the self-only CSP. */
+
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --border: #e2e5ea;
+  --text: #1f2733;
+  --muted: #66707d;
+  --accent: #1d6fb8;
+  --accent-contrast: #ffffff;
+  --danger: #c0392b;
+  --ok-bg: #e6f4ea;
+  --ok-text: #1e7e34;
+  --err-bg: #fdecea;
+  --err-text: #b3261e;
+  --radius: 6px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Layout */
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header .brand {
+  display: block;
+  padding: 0.85rem 1.5rem 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.site-header .brand:hover {
+  text-decoration: none;
+}
+
+nav.main-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0 1rem 0.5rem;
+}
+
+nav.main-nav a {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+nav.main-nav a:hover {
+  background: var(--bg);
+  text-decoration: none;
+}
+
+nav.main-nav a.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+main.content {
+  max-width: 1100px;
+  margin: 1.5rem auto;
+  padding: 0 1.5rem 3rem;
+}
+
+h1, h2, h3 {
+  line-height: 1.25;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  background: #f0f2f5;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: #fafbfc;
+}
+
+/* Forms */
+form {
+  margin: 0;
+}
+
+label {
+  display: block;
+  margin: 0.65rem 0 0.2rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  max-width: 420px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+}
+
+textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(29, 111, 184, 0.15);
+}
+
+/* Buttons */
+button,
+.btn {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover,
+.btn:hover {
+  filter: brightness(0.95);
+  text-decoration: none;
+}
+
+button.secondary,
+.btn.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+button.danger,
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Flash messages */
+.flash {
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.flash--success {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.flash--error {
+  background: var(--err-bg);
+  color: var(--err-text);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Stats overview — responsive grid of stat tiles (cards) */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.stat-tile {
+  margin-bottom: 0;
+}
+
+.stat-tile .muted {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stat-value {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Per-column filter row on the spots page */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.filters label {
+  margin: 0;
+  flex: 1 1 180px;
+}
+
+.filters input {
+  max-width: none;
+}

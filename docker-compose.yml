@@ -1,0 +1,58 @@
+# BrizoCast — Outdoor Conditions Alert Bot
+#
+# Single-service Compose file suited to a Raspberry Pi or any small host.
+# The bot talks to Telegram via long polling (outbound only), so NO ports are
+# published — there is no inbound network surface.
+
+services:
+  brizocast:
+    build: .
+    image: brizocast:latest
+    container_name: brizocast
+    # Keep the bot running across crashes and host reboots, but not after an
+    # explicit `docker compose stop`.
+    restart: unless-stopped
+    # All runtime configuration comes from .env (see .env.example).
+    env_file: .env
+    volumes:
+      # Persistent SQLite database + bundled JSON datasets. DATABASE_URL points
+      # at sqlite+aiosqlite:///data/brizocast.db inside this mounted volume.
+      - ./data:/app/data
+    # On a Raspberry Pi, uncomment (or set per your architecture) so Compose
+    # pulls/builds the matching arch. Optional on native ARM hosts.
+    # platform: linux/arm64
+    healthcheck:
+      # Lightweight liveness/readiness probe: verifies config loads and the
+      # SQLite database is reachable. Exits 0 when healthy, non-zero otherwise.
+      test: ["CMD", "python", "-m", "brizocast.health"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # No `ports:` — Telegram long polling is outbound only.
+
+  admin:
+    # BrizoCast Admin — the operator web panel. Reuses the SAME image as the
+    # bot but runs a different entrypoint (Uvicorn) in its own container.
+    build: .
+    image: brizocast:latest
+    container_name: brizocast-admin
+    # Keep the panel running across crashes and host reboots, but not after an
+    # explicit `docker compose stop`.
+    restart: unless-stopped
+    # Run the FastAPI/Uvicorn admin panel instead of the bot process.
+    command: ["python", "-m", "brizocast.admin"]
+    # Panel configuration (ADMIN_USERNAME/PASSWORD, ADMIN_BIND_HOST, ADMIN_PORT)
+    # comes from the same .env (see .env.example).
+    env_file: .env
+    volumes:
+      # Mount the SAME shared volume as the bot: the panel reads/writes the
+      # same SQLite database and surf-spots dataset under /app/data.
+      - ./data:/app/data
+    ports:
+      # Publish ONLY on the LAN host address — never 0.0.0.0. Docker opens the
+      # port solely on ${ADMIN_BIND_HOST}; the container listens on 8000.
+      - "${ADMIN_BIND_HOST}:${ADMIN_PORT}:8000"
+    # Start after the bot so the shared database is bootstrapped first.
+    depends_on:
+      - brizocast

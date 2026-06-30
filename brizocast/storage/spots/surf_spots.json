@@ -1,0 +1,202 @@
+[
+  {
+    "spot_key": "pt/peniche-supertubos",
+    "name": "Supertubos",
+    "lat": 39.3436,
+    "lon": -9.3577,
+    "country": "Portugal",
+    "region": "Peniche"
+  },
+  {
+    "spot_key": "pt/nazare-praia-do-norte",
+    "name": "Praia do Norte",
+    "lat": 39.6068,
+    "lon": -9.085,
+    "country": "Portugal",
+    "region": "Nazaré"
+  },
+  {
+    "spot_key": "pt/ericeira-ribeira-dilhas",
+    "name": "Ribeira d'Ilhas",
+    "lat": 38.9667,
+    "lon": -9.4186,
+    "country": "Portugal",
+    "region": "Ericeira"
+  },
+  {
+    "spot_key": "pt/ericeira-coxos",
+    "name": "Coxos",
+    "lat": 38.9869,
+    "lon": -9.4197,
+    "country": "Portugal",
+    "region": "Ericeira"
+  },
+  {
+    "spot_key": "pt/cascais-carcavelos",
+    "name": "Carcavelos",
+    "lat": 38.6803,
+    "lon": -9.337,
+    "country": "Portugal",
+    "region": "Lisbon"
+  },
+  {
+    "spot_key": "pt/cascais-guincho",
+    "name": "Praia do Guincho",
+    "lat": 38.733,
+    "lon": -9.472,
+    "country": "Portugal",
+    "region": "Cascais"
+  },
+  {
+    "spot_key": "pt/caparica-costa",
+    "name": "Costa da Caparica",
+    "lat": 38.644,
+    "lon": -9.236,
+    "country": "Portugal",
+    "region": "Lisbon"
+  },
+  {
+    "spot_key": "es/mundaka",
+    "name": "Mundaka",
+    "lat": 43.4072,
+    "lon": -2.6989,
+    "country": "Spain",
+    "region": "Basque Country"
+  },
+  {
+    "spot_key": "es/zarautz",
+    "name": "Zarautz",
+    "lat": 43.2846,
+    "lon": -2.17,
+    "country": "Spain",
+    "region": "Basque Country"
+  },
+  {
+    "spot_key": "es/sopelana",
+    "name": "Sopelana",
+    "lat": 43.387,
+    "lon": -2.993,
+    "country": "Spain",
+    "region": "Basque Country"
+  },
+  {
+    "spot_key": "es/asturias-rodiles",
+    "name": "Rodiles",
+    "lat": 43.5253,
+    "lon": -5.3833,
+    "country": "Spain",
+    "region": "Asturias"
+  },
+  {
+    "spot_key": "es/cantabria-somo",
+    "name": "Somo",
+    "lat": 43.45,
+    "lon": -3.75,
+    "country": "Spain",
+    "region": "Cantabria"
+  },
+  {
+    "spot_key": "fr/hossegor-la-graviere",
+    "name": "La Gravière",
+    "lat": 43.665,
+    "lon": -1.443,
+    "country": "France",
+    "region": "Hossegor"
+  },
+  {
+    "spot_key": "fr/biarritz-grande-plage",
+    "name": "Grande Plage",
+    "lat": 43.4845,
+    "lon": -1.5586,
+    "country": "France",
+    "region": "Biarritz"
+  },
+  {
+    "spot_key": "fr/lacanau-ocean",
+    "name": "Lacanau Océan",
+    "lat": 45.0,
+    "lon": -1.203,
+    "country": "France",
+    "region": "Gironde"
+  },
+  {
+    "spot_key": "fr/seignosse-les-bourdaines",
+    "name": "Les Bourdaines",
+    "lat": 43.69,
+    "lon": -1.43,
+    "country": "France",
+    "region": "Landes"
+  },
+  {
+    "spot_key": "fr/brittany-la-torche",
+    "name": "La Torche",
+    "lat": 47.837,
+    "lon": -4.35,
+    "country": "France",
+    "region": "Brittany"
+  },
+  {
+    "spot_key": "ie/bundoran-the-peak",
+    "name": "The Peak",
+    "lat": 54.478,
+    "lon": -8.289,
+    "country": "Ireland",
+    "region": "Donegal"
+  },
+  {
+    "spot_key": "ie/lahinch",
+    "name": "Lahinch",
+    "lat": 52.934,
+    "lon": -9.347,
+    "country": "Ireland",
+    "region": "Clare"
+  },
+  {
+    "spot_key": "ie/mullaghmore-head",
+    "name": "Mullaghmore Head",
+    "lat": 54.47,
+    "lon": -8.45,
+    "country": "Ireland",
+    "region": "Sligo"
+  },
+  {
+    "spot_key": "ie/easkey-right",
+    "name": "Easkey Right",
+    "lat": 54.29,
+    "lon": -8.96,
+    "country": "Ireland",
+    "region": "Sligo"
+  },
+  {
+    "spot_key": "ma/taghazout-anchor-point",
+    "name": "Anchor Point",
+    "lat": 30.545,
+    "lon": -9.709,
+    "country": "Morocco",
+    "region": "Taghazout"
+  },
+  {
+    "spot_key": "ma/imsouane-the-bay",
+    "name": "Imsouane Bay",
+    "lat": 30.839,
+    "lon": -9.82,
+    "country": "Morocco",
+    "region": "Imsouane"
+  },
+  {
+    "spot_key": "uk/newquay-fistral",
+    "name": "Fistral Beach",
+    "lat": 50.416,
+    "lon": -5.1,
+    "country": "United Kingdom",
+    "region": "Cornwall"
+  },
+  {
+    "spot_key": "uk/porthleven",
+    "name": "Porthleven",
+    "lat": 50.084,
+    "lon": -5.316,
+    "country": "United Kingdom",
+    "region": "Cornwall"
+  }
+]

@@ -1,0 +1,12 @@
+{#
+  Reusable flash-message fragment.
+
+  Rendered both inside ``base.html`` (full-page loads) and on its own as an
+  HTMX swap target (e.g. hx-target="#flash") after a write request. Expects a
+  ``flash`` mapping with ``category`` ("success" | "error") and ``message``.
+#}
+{% if flash %}
+<div class="flash flash--{{ flash.category | default('success') }}" role="status">
+  {{ flash.message }}
+</div>
+{% endif %}

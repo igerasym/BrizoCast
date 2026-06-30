@@ -1,0 +1,41 @@
+{#
+  Run-forecast-check-now + broadcast commands (Req 8.*, 9.*).
+
+  Forms POST back with redirect-after-POST and a CSRF hidden field:
+    run check -> POST /commands/run-check
+    broadcast -> POST /commands/broadcast  (field: text)
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<h1>Commands</h1>
+
+<div class="card">
+  <h2>Run forecast check now</h2>
+  <p class="muted">
+    Enqueue an on-demand forecast check. The bot runs it on its next scheduler
+    tick — no need to wait for the next scheduled run.
+  </p>
+  <form method="post" action="/commands/run-check">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+    <button type="submit">Run forecast check now</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Broadcast announcement</h2>
+  <p class="muted">
+    Send a message to every BrizoCast user. The bot delivers it on its next
+    scheduler tick.
+  </p>
+  <form method="post" action="/commands/broadcast">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+    <label for="text">Message</label>
+    <textarea id="text" name="text" rows="5"
+              placeholder="Enter the announcement text…"></textarea>
+    <p><button type="submit">Broadcast announcement</button></p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{#
+  Feedback list with up/down totals (Req 10.1, 10.2).
+
+  Context:
+    feedback : FeedbackView (rows: list[FeedbackRow], up_count, down_count)
+      FeedbackRow: id, owner_telegram_id, spot_key, surf_score, rating,
+                   created_at
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<h1>Feedback</h1>
+
+<div class="card">
+  <h2>Totals</h2>
+  <p class="muted">Across all recorded alert feedback.</p>
+  <p>
+    <strong>👍 {{ feedback.up_count }}</strong> thumbs-up
+    &nbsp;·&nbsp;
+    <strong>👎 {{ feedback.down_count }}</strong> thumbs-down
+  </p>
+</div>
+
+{% if feedback.rows %}
+<table>
+  <thead>
+    <tr>
+      <th>User (Telegram ID)</th>
+      <th>Surf spot</th>
+      <th>Surf score</th>
+      <th>Rating</th>
+      <th>Timestamp</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in feedback.rows %}
+    <tr>
+      <td>{{ entry.owner_telegram_id if entry.owner_telegram_id is not none else "—" }}</td>
+      <td>{{ entry.spot_key }}</td>
+      <td>{{ entry.surf_score }}</td>
+      <td>{{ entry.rating }}</td>
+      <td>{{ entry.created_at.strftime("%Y-%m-%d %H:%M:%S %Z") }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No feedback recorded yet.</p>
+{% endif %}
+{% endblock %}

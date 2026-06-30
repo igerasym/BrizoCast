@@ -1,0 +1,93 @@
+{#
+  User detail + plan-change form (Req 2.2, 2.3, 2.4, 2.5, 3.2).
+
+  Context:
+    user          : UserDetailView (id, telegram_user_id, username, onboarded,
+                    selected_activity_key, created_at, plan_tier, plan_status,
+                    plan_expiry_at)
+    subscriptions : list[SubscriptionSummary] (subscription_id,
+                    activity_display_name, location_label, location_place,
+                    search_radius_km, notification_mode)
+    tiers         : list[str]  selectable plan tiers
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<p><a href="/users">&larr; Back to users</a></p>
+<h1>User {{ user.telegram_user_id }}</h1>
+
+<div class="card">
+  <h2>Profile</h2>
+  <table>
+    <tbody>
+      <tr><th>Internal ID</th><td>{{ user.id }}</td></tr>
+      <tr><th>Telegram ID</th><td>{{ user.telegram_user_id }}</td></tr>
+      <tr><th>Username</th><td>{{ user.username or "—" }}</td></tr>
+      <tr><th>Onboarded</th><td>{{ "Yes" if user.onboarded else "No" }}</td></tr>
+      <tr><th>Selected activity</th><td>{{ user.selected_activity_key or "—" }}</td></tr>
+      <tr><th>Created</th><td>{{ user.created_at.strftime("%Y-%m-%d %H:%M:%S %Z") }}</td></tr>
+      <tr>
+        <th>Plan</th>
+        <td>
+          {{ user.plan_tier or "—" }}{% if user.plan_status %}
+          <span class="muted">({{ user.plan_status }})</span>{% endif %}
+        </td>
+      </tr>
+      {% if user.plan_expiry_at %}
+      <tr><th>Plan expiry</th><td>{{ user.plan_expiry_at.strftime("%Y-%m-%d %H:%M:%S %Z") }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Change plan</h2>
+  <form method="post" action="/users/{{ user.id }}/plan">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+    <label for="tier">Plan tier</label>
+    <select id="tier" name="tier">
+      {% for tier in tiers %}
+      <option value="{{ tier }}"{% if tier == user.plan_tier %} selected{% endif %}>{{ tier }}</option>
+      {% endfor %}
+    </select>
+    <p><button type="submit">Update plan</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Subscriptions</h2>
+  {% if subscriptions %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Activity</th>
+        <th>Location</th>
+        <th>Radius (km)</th>
+        <th>Mode</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sub in subscriptions %}
+      <tr>
+        <td>{{ sub.subscription_id }}</td>
+        <td>{{ sub.activity_display_name }}</td>
+        <td>
+          {{ sub.location_label }}
+          {% if sub.location_place and sub.location_place != sub.location_label %}
+            <span class="muted">— {{ sub.location_place }}</span>
+          {% endif %}
+        </td>
+        <td>{{ "%g"|format(sub.search_radius_km) }}</td>
+        <td>{{ sub.notification_mode }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No subscriptions.</p>
+  {% endif %}
+</div>
+{% endblock %}

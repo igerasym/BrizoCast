@@ -1,0 +1,79 @@
+{#
+  Surf-spots table partial (Req 4.1, 4.3, 4.4).
+
+  Rendered both inside ``spots_list.html`` and on its own as an HTMX swap target
+  (``#spots-table``) when the per-column filters change. Expects:
+    spots : list[SurfSpot], already filtered + sorted (country, region, name).
+#}
+{% macro spot_fields(spot) %}
+  <label>Name
+    <input type="text" name="name" value="{{ spot.name }}" required>
+  </label>
+  <label>Latitude
+    <input type="number" step="any" name="lat" value="{{ spot.lat }}" required>
+  </label>
+  <label>Longitude
+    <input type="number" step="any" name="lon" value="{{ spot.lon }}" required>
+  </label>
+  <label>Country
+    <input type="text" name="country" value="{{ spot.country or '' }}" placeholder="optional">
+  </label>
+  <label>Region
+    <input type="text" name="region" value="{{ spot.region or '' }}" placeholder="optional">
+  </label>
+{% endmacro %}
+
+<table>
+  <thead>
+    <tr>
+      <th>Country</th>
+      <th>Region</th>
+      <th>Name</th>
+      <th>Identifier</th>
+      <th>Lat</th>
+      <th>Lon</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for spot in spots %}
+    <tr>
+      <td>{{ spot.country or '—' }}</td>
+      <td>{{ spot.region or '—' }}</td>
+      <td>{{ spot.name }}</td>
+      <td><code>{{ spot.spot_key }}</code></td>
+      <td>{{ '%.4f' | format(spot.lat) }}</td>
+      <td>{{ '%.4f' | format(spot.lon) }}</td>
+      <td>
+        <details>
+          <summary>Edit</summary>
+          <form method="post" action="/spots/{{ spot.spot_key }}">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            {{ spot_fields(spot) }}
+            <p><button type="submit">Save changes</button></p>
+          </form>
+          <form method="post" action="/spots/{{ spot.spot_key }}/delete">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <button type="submit" class="danger">Delete spot</button>
+          </form>
+        </details>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="muted">No spots match the current filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="muted">{{ spots | length }} spot(s) shown{% if total is defined %} of {{ total }} total{% endif %}.</p>
+
+{% if total_pages is defined and total_pages > 1 %}
+<nav class="pagination">
+  {% if page > 1 %}
+    <a href="/spots?country={{ request.query_params.get('country','') }}&region={{ request.query_params.get('region','') }}&name={{ request.query_params.get('name','') }}&key={{ request.query_params.get('key','') }}&page={{ page - 1 }}">← Prev</a>
+  {% endif %}
+  <span>Page {{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}
+    <a href="/spots?country={{ request.query_params.get('country','') }}&region={{ request.query_params.get('region','') }}&name={{ request.query_params.get('name','') }}&key={{ request.query_params.get('key','') }}&page={{ page + 1 }}">Next →</a>
+  {% endif %}
+</nav>
+{% endif %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+{% block content %}
+<h1>Regional presets</h1>
+<p class="muted">
+  Default surf conditions per region. Used as fallback when a user has no custom
+  conditions. Managed here or generated automatically by Gemini AI.
+</p>
+
+{% if presets %}
+<table>
+  <thead>
+    <tr>
+      <th>Region</th>
+      <th>Name</th>
+      <th>Wave (m)</th>
+      <th>Period (s)</th>
+      <th>Wind (km/h)</th>
+      <th>Wind dir</th>
+      <th>Swell dir</th>
+      <th>Min score</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in presets %}
+    <tr>
+      <td>{{ p.region or "—" }}</td>
+      <td>{{ p.name }}</td>
+      <td>{{ "%g"|format(p.min_wave_m) }}–{{ "%g"|format(p.max_wave_m) }}</td>
+      <td>{{ "%g"|format(p.min_period_s) }}</td>
+      <td>≤{{ "%g"|format(p.max_wind_kmh) }}</td>
+      <td>{{ p.preferred_wind_dir or "any" }}</td>
+      <td>{{ p.preferred_swell_dir or "any" }}</td>
+      <td>{{ p.min_alert_score if p.min_alert_score is not none else "—" }}</td>
+      <td>
+        <details>
+          <summary>▶ Edit</summary>
+          <form method="post" action="/presets/{{ p.id }}">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <label>Region <input type="text" name="region" value="{{ p.region or '' }}" required></label>
+            <label>Name <input type="text" name="name" value="{{ p.name }}" required></label>
+            <label>Min wave (m) <input type="number" step="any" name="min_wave_m" value="{{ p.min_wave_m }}" required></label>
+            <label>Max wave (m) <input type="number" step="any" name="max_wave_m" value="{{ p.max_wave_m }}" required></label>
+            <label>Min period (s) <input type="number" step="any" name="min_period_s" value="{{ p.min_period_s }}" required></label>
+            <label>Max wind (km/h) <input type="number" step="any" name="max_wind_kmh" value="{{ p.max_wind_kmh }}" required></label>
+            <label>Wind dir <input type="text" name="preferred_wind_dir" value="{{ p.preferred_wind_dir or '' }}" placeholder="optional e.g. NE"></label>
+            <label>Swell dir <input type="text" name="preferred_swell_dir" value="{{ p.preferred_swell_dir or '' }}" placeholder="optional e.g. W"></label>
+            <label>Min alert score (0-100) <input type="number" name="min_alert_score" min="0" max="100" value="{{ p.min_alert_score if p.min_alert_score is not none else '' }}" placeholder="e.g. 60"></label>
+            <p><button type="submit">Save changes</button></p>
+          </form>
+        </details>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="muted">{{ presets | length }} preset(s).</p>
+{% else %}
+<p class="muted">No regional presets yet. Add one below.</p>
+{% endif %}
+
+<section class="card" style="margin-top:2rem">
+  <h2>Add regional preset</h2>
+  <form method="post" action="/presets">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+    <label>Region <input type="text" name="region" required></label>
+    <label>Name <input type="text" name="name" required></label>
+    <label>Min wave (m) <input type="number" step="any" name="min_wave_m" required></label>
+    <label>Max wave (m) <input type="number" step="any" name="max_wave_m" required></label>
+    <label>Min period (s) <input type="number" step="any" name="min_period_s" required></label>
+    <label>Max wind (km/h) <input type="number" step="any" name="max_wind_kmh" required></label>
+    <label>Wind dir <input type="text" name="preferred_wind_dir" placeholder="optional e.g. NE"></label>
+    <label>Swell dir <input type="text" name="preferred_swell_dir" placeholder="optional e.g. W"></label>
+    <label>Min alert score (0-100) <input type="number" name="min_alert_score" min="0" max="100" placeholder="e.g. 60"></label>
+    <p><button type="submit">Add preset</button></p>
+  </form>
+</section>
+{% endblock %}

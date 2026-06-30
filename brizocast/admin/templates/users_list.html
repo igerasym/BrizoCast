@@ -1,0 +1,40 @@
+{#
+  Users list (Req 2.1).
+
+  Context:
+    users : list[UserRow]  (id, telegram_user_id, username, plan_tier,
+                            subscription_count)
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+
+{% block content %}
+<h1>Users</h1>
+{% if users %}
+<table>
+  <thead>
+    <tr>
+      <th>Telegram ID</th>
+      <th>Username</th>
+      <th>Plan</th>
+      <th>Subscriptions</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.telegram_user_id }}</td>
+      <td>{{ user.username or "—" }}</td>
+      <td>{{ user.plan_tier }}</td>
+      <td>{{ user.subscription_count }}</td>
+      <td><a class="btn secondary" href="/users/{{ user.id }}">View</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No users yet.</p>
+{% endif %}
+{% endblock %}
