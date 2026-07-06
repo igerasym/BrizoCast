@@ -36,6 +36,13 @@ from brizocast.core.logging import BoundLogger, get_logger
 from brizocast.providers.spotcatalog.base import SpotCatalogError, SpotCatalogProvider
 
 try:
+    from curl_cffi.requests import AsyncSession as _CurlSession
+    _HAS_CURL_CFFI = True
+except ImportError:  # pragma: no cover
+    _CurlSession = None  # type: ignore[assignment,misc]
+    _HAS_CURL_CFFI = False
+
+try:
     from browserforge.headers import HeaderGenerator as _HeaderGenerator
 
     _header_gen: _HeaderGenerator | None = _HeaderGenerator(
@@ -220,14 +227,14 @@ class SurflineSpotCatalog:
                 headers = _generate_headers()
             try:
                 response = await self._request(url, params, headers)
-            except httpx.HTTPError as exc:
+            except Exception as exc:
                 last_error = exc
                 last_status = None
             else:
-                if response.status_code == httpx.codes.OK:
+                if response.status_code == 200:
                     try:
                         data: dict[str, Any] = response.json()
-                    except ValueError as exc:
+                    except (ValueError, Exception) as exc:
                         raise SpotCatalogError(
                             "surfline response was not JSON (likely a "
                             "challenge/HTML page)"
@@ -262,7 +269,21 @@ class SurflineSpotCatalog:
     async def _request(
         self, url: str, params: dict[str, Any], headers: dict[str, str]
     ) -> httpx.Response:
-        """Issue a single GET, reusing the shared client or a short-lived one."""
+        """Issue a single GET with TLS fingerprint impersonation (curl_cffi).
+
+        Falls back to plain httpx if curl_cffi is not installed.
+        """
+        if _HAS_CURL_CFFI:
+            # Pick a random browser impersonation per request.
+            impersonate = random.choice(["chrome120", "chrome124", "safari17_0", "edge101"])
+            async with _CurlSession() as session:
+                resp = await session.get(
+                    url, params=params, headers=headers,
+                    impersonate=impersonate, timeout=self._timeout,
+                )
+                # Wrap in a minimal object compatible with the retry loop.
+                return _curl_response(resp.status_code, resp.content)
+        # Fallback to httpx (no TLS impersonation — may get 403).
         if self._client is not None:
             return await self._client.get(
                 url, params=params, headers=headers, timeout=self._timeout
@@ -290,6 +311,24 @@ class SurflineSpotCatalog:
             country=_path_country(raw),
             region=_subregion_name(raw) or _path_region(raw),
         )
+
+
+# -- Helper response wrapper for curl_cffi ------------------------------------- #
+
+class _CurlResponse:
+    """Minimal response wrapper matching what the retry loop expects."""
+
+    def __init__(self, status_code: int, content: bytes) -> None:
+        self.status_code = status_code
+        self.content = content
+
+    def json(self) -> Any:
+        import json
+        return json.loads(self.content)
+
+
+def _curl_response(status_code: int, content: bytes) -> _CurlResponse:
+    return _CurlResponse(status_code, content)
 
 
 def _bounding_box(
