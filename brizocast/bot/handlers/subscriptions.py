@@ -150,10 +150,12 @@ async def _send(
     update: Update,
     text: str,
     keyboard: ReplyKeyboardMarkup | ReplyKeyboardRemove | InlineKeyboardMarkup | None = None,
+    *,
+    parse_mode: str | None = None,
 ) -> None:
     msg = update.effective_message
     if msg is not None:
-        await msg.reply_text(text, reply_markup=keyboard)
+        await msg.reply_text(text, reply_markup=keyboard, parse_mode=parse_mode)
 
 
 def _sub_list_keyboard(summaries: list[Any]) -> ReplyKeyboardMarkup:
@@ -769,24 +771,49 @@ def build_subscription_handlers(
             await _send(update, _ACTIVITY_UNKNOWN_TEXT)
             return _END
 
-        # Auto-attach regional preset if available
-        preset_id_to_use: int | None = None
-        if preset_service is not None and spot_discovery is not None:
+        # Show progress to user while we search for spots.
+        msg = update.effective_message
+        if msg:
+            progress = await msg.reply_text("🔍 Searching for surf spots nearby…")
+        else:
+            progress = None
+
+        # Run spot ingestion if configured (imports from Surfline catalog).
+        from brizocast.core.domain.geo import GeoPoint
+        from brizocast.models.location import Location as LocModel
+        from brizocast.database.session import session_scope
+
+        loc_point: GeoPoint | None = None
+        ingest_radius = ingest_radius_km if spot_ingestion else 50.0
+
+        try:
+            async with session_scope(subscription_service._session_factory) as _s:
+                loc = await _s.get(LocModel, location_id)
+                if loc is not None:
+                    loc_point = GeoPoint(lat=loc.lat, lon=loc.lon)
+        except Exception:  # noqa: BLE001
+            pass
+
+        if loc_point and spot_ingestion:
             try:
-                from brizocast.core.domain.geo import GeoPoint
-                from brizocast.models.location import Location as LocModel
-                from brizocast.database.session import session_scope
-                async with session_scope(preset_service._session_factory) as _s:
-                    loc = await _s.get(LocModel, location_id)
-                    if loc is not None:
-                        result = spot_discovery.discover(GeoPoint(lat=loc.lat, lon=loc.lon), 50.0)
-                        region = result.spots[0].region if result.has_nearby_spots else None
-                        if region:
-                            from brizocast.repositories.preset_repo import SqlAlchemyPresetRepository
-                            async with session_scope(preset_service._session_factory) as _s2:
-                                presets = await SqlAlchemyPresetRepository(_s2).list_defaults(region)
-                                if presets:
-                                    preset_id_to_use = presets[0].id
+                await spot_ingestion.ingest_near(loc_point.lat, loc_point.lon, ingest_radius)
+            except Exception:  # noqa: BLE001
+                pass
+
+        # Discover nearby spots and auto-attach regional preset.
+        preset_id_to_use: int | None = None
+        nearby_spots: list[str] = []
+        if preset_service is not None and spot_discovery is not None and loc_point:
+            try:
+                result = spot_discovery.discover(loc_point, 20.0)
+                nearby_spots = [s.name for s in result.spots[:10]]
+                region = result.spots[0].region if result.has_nearby_spots else None
+                if region:
+                    from brizocast.repositories.preset_repo import SqlAlchemyPresetRepository
+                    async with session_scope(preset_service._session_factory) as _s2:
+                        presets = await SqlAlchemyPresetRepository(_s2).list_defaults(region)
+                        if presets:
+                            preset_id_to_use = presets[0].id
             except Exception:  # noqa: BLE001
                 pass
 
@@ -796,18 +823,39 @@ def build_subscription_handlers(
                 search_radius_km=None, preset_id=preset_id_to_use, notification_mode="immediate",
             )
         except DomainValidationError as exc:
+            if progress:
+                await progress.delete()
             await _send(update, f"❌ {exc}")
             return _END
 
-        # Fetch the location name to make the confirmation meaningful
+        # Delete the progress message.
+        if progress:
+            try:
+                await progress.delete()
+            except Exception:  # noqa: BLE001
+                pass
+
+        # Build a nice confirmation with the list of monitored spots.
         summaries = await subscription_service.summarize_for_user(user_id)
         created = next((s for s in summaries if s.subscription_id == subscription.id), None)
-        if created:
-            location_name = created.location_label or created.location_place or "your location"
-            radius = created.search_radius_km
-            await _send(update, f"✅ Subscribed to surf alerts for {location_name} within {radius:g} km!")
+        location_name = (created.location_label or created.location_place or "your location") if created else "your location"
+        radius = created.search_radius_km if created else 20
+
+        if nearby_spots:
+            spots_text = "\n".join(f"  • {name}" for name in nearby_spots)
+            text = (
+                f"✅ Subscribed to *{location_name}*\n\n"
+                f"🏖 Monitoring {len(nearby_spots)} spot(s) within {radius:g} km:\n"
+                f"{spots_text}\n\n"
+                f"I'll alert you when conditions are good 🤙"
+            )
         else:
-            await _send(update, "✅ Subscribed!")
+            text = (
+                f"✅ Subscribed to *{location_name}*\n\n"
+                f"⚠️ No surf spots found within {radius:g} km yet.\n"
+                f"Spots will appear once the catalog becomes available."
+            )
+        await _send(update, text, parse_mode="Markdown")
         return await show_list(update, context)
 
     async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
