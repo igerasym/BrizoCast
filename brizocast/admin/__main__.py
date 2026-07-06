@@ -20,11 +20,23 @@ from brizocast.admin.settings import load_panel_settings
 
 
 def main() -> None:
-    """Load panel settings, build the app, and run uvicorn on container port 8000."""
+    """Load panel settings, build the app, and run uvicorn on container port 8000.
+
+    Inside Docker the app always binds 0.0.0.0:8000 — Docker Compose's port
+    mapping restricts external access to ADMIN_BIND_HOST:ADMIN_PORT. Outside
+    Docker (local dev) it binds to ADMIN_BIND_HOST:ADMIN_PORT directly.
+    """
+    import os
+
     panel = load_panel_settings()
     app = build_admin_app(panel)
-    # Container port is fixed at 8000; the LAN bind host comes from settings.
-    uvicorn.run(app, host=panel.ADMIN_BIND_HOST, port=panel.ADMIN_PORT)
+
+    # Detect if running inside a container (presence of /.dockerenv or cgroup).
+    in_docker = os.path.exists("/.dockerenv") or os.path.isfile("/proc/1/cgroup")
+    if in_docker:
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    else:
+        uvicorn.run(app, host=panel.ADMIN_BIND_HOST, port=panel.ADMIN_PORT)
 
 
 if __name__ == "__main__":
