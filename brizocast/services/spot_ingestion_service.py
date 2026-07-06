@@ -129,6 +129,11 @@ class SpotIngestionService:
         try:
             candidates = await self._catalog.spots_near(lat, lon, radius_km)
         except SpotCatalogError as exc:
+            from brizocast.services.health_tracker import tracker as _tracker
+            _tracker.record_failure(
+                f"spotcatalog:{self._catalog.key}",
+                message=str(exc)[:80],
+            )
             self._log.warning(
                 "spot catalogue (%s) unavailable for (%.4f, %.4f): %s; "
                 "serving existing dataset",
@@ -142,6 +147,12 @@ class SpotIngestionService:
         # Mark the cell imported even on an empty result, so we do not re-hit the
         # catalogue for a sparse area within the TTL.
         self._imported_cells[cell] = time.monotonic()
+
+        from brizocast.services.health_tracker import tracker as _tracker
+        _tracker.record_success(
+            f"spotcatalog:{self._catalog.key}",
+            message=f"{len(candidates)} spots near ({lat:.3f}, {lon:.3f})",
+        )
 
         existing = await self._spot_admin.list_spots()
         added = 0

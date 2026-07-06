@@ -43,6 +43,7 @@ from brizocast.admin.flash import prepare_csrf, set_csrf_cookie
 from brizocast.admin.routers import (
     feedback,
     forecast,
+    logs,
     presets,
     spots,
     subscriptions,
@@ -116,6 +117,7 @@ def build_admin_app(panel: PanelSettings) -> FastAPI:
         presets,
         forecast,
         feedback,
+        logs,
     ):
         app.include_router(router.router)
 

@@ -262,15 +262,30 @@ class StatusService:
         if target is None:
             raise NotFoundError(f"subscription {subscription_id} does not exist")
 
+        log = self._log.bind(subscription_id=subscription_id)
+        log.info(
+            "daily forecast requested for %r (radius %.0f km, activity=%s)",
+            target.location_label,
+            target.search_radius_km,
+            target.activity_key,
+        )
+
         discovery = self._spots.discover(
             target.center, target.search_radius_km, subscription_id=subscription_id
         )
         if not discovery.has_nearby_spots:
+            log.info("daily forecast: no nearby spots for %r", target.location_label)
             return DailyForecast(
                 subscription_id=subscription_id,
                 location_label=target.location_label,
                 has_nearby_spots=False,
             )
+
+        log.info(
+            "daily forecast: scoring %d spot(s): %s",
+            len(discovery.spots),
+            ", ".join(s.name for s in discovery.spots[:8]),
+        )
 
         scorer = self._registry.get(target.activity_key).scorer()
         now = self._now()
@@ -329,6 +344,13 @@ class StatusService:
                     period_name=name,
                     spot=None, score=None, category=None, step=None, result=None,
                 ))
+
+        summary = ", ".join(
+            f"{p.period_name}={p.score}@{p.spot.name}" if p.score is not None and p.spot
+            else f"{p.period_name}=—"
+            for p in periods
+        )
+        log.info("daily forecast result: %s", summary)
 
         return DailyForecast(
             subscription_id=subscription_id,

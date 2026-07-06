@@ -31,7 +31,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
-from brizocast.config.overrides import ConfigOverrideStore
+from brizocast.config.overrides import ConfigOverrideStore, VALID_LOG_LEVELS
 from brizocast.config.settings import PlanLimit
 from brizocast.providers.forecast.factory import (
     _REGISTRY,
@@ -50,6 +50,7 @@ __all__ = [
 _MONETIZATION_ENABLED_KEY = "MONETIZATION_ENABLED"
 _PLAN_LIMITS_KEY = "PLAN_LIMITS"
 _FORECAST_PROVIDER_KEY = "FORECAST_PROVIDER"
+_LOG_LEVEL_KEY = "LOG_LEVEL"
 # Persisted list of forecast provider keys the admin has enabled. Absent ⇒ every
 # registered provider is enabled (the default).
 _FORECAST_PROVIDERS_ENABLED_KEY = "FORECAST_PROVIDERS_ENABLED"
@@ -196,6 +197,33 @@ class ConfigAdminService:
     def available_forecast_providers(self) -> list[str]:
         """Return the sorted list of registered forecast provider ids (Req 7.1)."""
         return registered_forecast_provider_keys()
+
+    # -- log level ----------------------------------------------------------- #
+
+    async def set_log_level(self, level: str) -> None:
+        """Persist the log level as a JSON string override.
+
+        Validates the level against the recognised logging levels, rejecting
+        otherwise — writing nothing.
+
+        Args:
+            level: The log level name (e.g. ``"DEBUG"``, ``"INFO"``).
+
+        Raises:
+            ConfigValidationError: If ``level`` is not a recognised level.
+        """
+        normalised = level.strip().upper()
+        if normalised not in VALID_LOG_LEVELS:
+            available = ", ".join(sorted(VALID_LOG_LEVELS))
+            raise ConfigValidationError(
+                f"unknown log level {level!r}; available: {available}"
+            )
+        await self._store.set(_LOG_LEVEL_KEY, normalised)
+
+    async def read_log_level(self) -> str | None:
+        """Return the persisted log level, or ``None`` if unset."""
+        raw = await self._store.get(_LOG_LEVEL_KEY)
+        return None if raw is None else str(raw)
 
     # -- enable / disable providers ----------------------------------------- #
 

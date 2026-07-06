@@ -28,7 +28,9 @@ __all__ = [
     "BoundLogger",
     "PACKAGE_LOGGER_NAME",
     "configure_logging",
+    "get_log_level",
     "get_logger",
+    "set_log_level",
 ]
 
 # All application loggers live under this namespace so a single handler,
@@ -266,7 +268,9 @@ def _qualified(name: str) -> str:
     return f"{PACKAGE_LOGGER_NAME}.{name}"
 
 
-def configure_logging(level: str | int = "INFO") -> None:
+def configure_logging(
+    level: str | int = "INFO", log_file: str | None = "data/brizocast.log"
+) -> None:
     """Configure structured logging for the application.
 
     Installs a single resilient stream handler on the package logger with the
@@ -275,10 +279,18 @@ def configure_logging(level: str | int = "INFO") -> None:
     are replaced. Also disables logging's global ``raiseExceptions`` so a sink
     failure can never crash the process (Req 18.5).
 
+    When ``log_file`` is provided, a second handler writes the same structured
+    output to that file (rotated at 5 MB, 3 backups). The admin panel's Logs
+    page tails this file.
+
     Args:
         level: Severity threshold as a level name (e.g. ``"INFO"``,
             ``"DEBUG"``) or a numeric :mod:`logging` level.
+        log_file: Path to a rotating log file, or ``None`` to log to stderr
+            only.
     """
+    from logging.handlers import RotatingFileHandler
+
     # A failed log emission must never raise out of the logging machinery.
     logging.raiseExceptions = False
 
@@ -289,12 +301,54 @@ def configure_logging(level: str | int = "INFO") -> None:
     for old_handler in list(package_logger.handlers):
         package_logger.removeHandler(old_handler)
 
+    formatter = _StructuredFormatter(fmt=_DEFAULT_FORMAT, datefmt=_DEFAULT_DATEFMT)
+
     handler: logging.Handler = _ResilientStreamHandler(stream=sys.stderr)
-    handler.setFormatter(_StructuredFormatter(fmt=_DEFAULT_FORMAT, datefmt=_DEFAULT_DATEFMT))
+    handler.setFormatter(formatter)
     package_logger.addHandler(handler)
+
+    # File handler: write to log_file so the admin panel can tail it.
+    if log_file:
+        try:
+            import os
+
+            os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
+            file_handler = RotatingFileHandler(
+                log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
+            )
+            file_handler.setFormatter(formatter)
+            file_handler.setLevel(_coerce_level(level))
+            package_logger.addHandler(file_handler)
+        except OSError:
+            # If we can't open the log file, continue with stderr only.
+            pass
 
     # Keep package records from also hitting the root logger's handlers.
     package_logger.propagate = False
+
+
+def set_log_level(level: str | int) -> None:
+    """Change the active log level of the package logger and its handlers at runtime.
+
+    Used by the bot's log-level sync job to apply a level chosen in the admin
+    panel without a restart. Applies the level to the package logger and each of
+    its handlers so both the stream and file sinks honour it.
+
+    Args:
+        level: Severity threshold as a level name or numeric level.
+    """
+    resolved = _coerce_level(level)
+    package_logger = logging.getLogger(PACKAGE_LOGGER_NAME)
+    package_logger.setLevel(resolved)
+    for handler in package_logger.handlers:
+        handler.setLevel(resolved)
+
+
+def get_log_level() -> str:
+    """Return the package logger's current effective level name (e.g. ``"INFO"``)."""
+    return logging.getLevelName(
+        logging.getLogger(PACKAGE_LOGGER_NAME).getEffectiveLevel()
+    )
 
 
 def get_logger(name: str, **context: object) -> BoundLogger:

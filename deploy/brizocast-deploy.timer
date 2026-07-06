@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly BrizoCast auto-deploy check
+
+[Timer]
+# Every Sunday at 04:00 UTC (before the morning digest)
+OnCalendar=Sun *-*-* 04:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -1,88 +1,44 @@
 {% extends "base.html" %}
-{% block title %}{{ title }} · BrizoCast Admin{% endblock %}
+{% block title %}Service Health · BrizoCast Admin{% endblock %}
 {% block content %}
-<h1>Forecast</h1>
+<h1>Service Health</h1>
 
-{# ── Service health ─────────────────────────────────────────────────────── #}
 <div class="card">
-  <h2>Service health</h2>
   <table>
+    <thead>
+      <tr><th>Service</th><th>Status</th><th>Message</th><th>Response</th><th>Last call</th></tr>
+    </thead>
     <tbody>
+      {% for s in services %}
       <tr>
-        <td><strong>Gemini AI</strong> <small class="muted">({{ gemini.model }})</small></td>
-        <td>{% if gemini.ok %}✅{% else %}❌{% endif %} {{ gemini.message }}</td>
+        <td>
+          <strong>{{ s.name }}</strong><br>
+          <small class="muted">{{ s.desc }}</small>
+        </td>
+        <td>
+          {% if s.ok is none %}⏸
+          {% elif s.ok %}✅
+          {% else %}❌{% endif %}
+        </td>
+        <td>{{ s.message }}</td>
+        <td>{{ s.ms or "—" }}</td>
+        <td title="{{ s.ts or '' }}">{{ s.age }}</td>
       </tr>
-      <tr>
-        <td><strong>Surfline</strong></td>
-        <td>{% if surfline.ok %}✅{% else %}❌{% endif %} {{ surfline.message }}</td>
-      </tr>
+      {% endfor %}
     </tbody>
   </table>
 </div>
 
-{# ── Run forecast now ───────────────────────────────────────────────────── #}
 <div class="card">
-  <h2>Run forecast check now</h2>
-  <p class="muted">
-    Enqueue an immediate forecast-check pass. The bot will pick it up and
-    dispatch alerts if conditions are met.
-  </p>
-  <form method="post" action="/forecast/run-check">
-    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-    <button type="submit">▶ Run forecast check</button>
-  </form>
-</div>
-
-{# ── Provider settings ──────────────────────────────────────────────────── #}
-<div class="card">
-  <h2>Forecast providers</h2>
-  <form method="post" action="/forecast/providers">
-    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-    <table>
-      <thead>
-        <tr><th>Enabled</th><th>Provider</th><th>Key</th><th>Active</th></tr>
-      </thead>
-      <tbody>
-        {% for p in providers %}
-        <tr>
-          <td>
-            <input type="checkbox" name="enabled" value="{{ p.key }}"
-                   {% if p.enabled %}checked{% endif %}
-                   {% if p.active %}disabled title="Active provider stays enabled"{% endif %}>
-            {% if p.active %}<input type="hidden" name="enabled" value="{{ p.key }}">{% endif %}
-          </td>
-          <td>{{ p.label }}</td>
-          <td><code>{{ p.key }}</code></td>
-          <td>{% if p.active %}✅{% endif %}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <p><button type="submit">Save providers</button></p>
-  </form>
-</div>
-
-<div class="card">
-  <h2>Active provider</h2>
-  <p class="muted">Current: <strong><code>{{ current }}</code></strong></p>
-  <form method="post" action="/forecast/provider">
-    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-    <select name="provider">
-      {% for p in selectable %}
-      <option value="{{ p.key }}"{% if p.active %} selected{% endif %}>{{ p.label }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit">Set active provider</button>
-  </form>
-</div>
-
-{# ── Cache ──────────────────────────────────────────────────────────────── #}
-<div class="card">
-  <h2>Cache</h2>
-  <p class="muted">Clear all cached forecast data to force a fresh fetch on the next run.</p>
-  <form method="post" action="/forecast/cache/clear">
-    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-    <button type="submit" class="danger">Clear cache</button>
-  </form>
+  <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+    <form method="post" action="/forecast/run-check">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <button type="submit">▶ Run forecast check</button>
+    </form>
+    <form method="post" action="/forecast/cache/clear">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <button type="submit" class="danger">Clear forecast cache</button>
+    </form>
+  </div>
 </div>
 {% endblock %}

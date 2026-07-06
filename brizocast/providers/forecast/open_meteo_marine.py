@@ -126,6 +126,10 @@ class OpenMeteoMarineProvider:
             "end_date": end_date,
         }
 
+        logger.debug(
+            "Open-Meteo request: lat=%.4f lon=%.4f window=%s..%s",
+            lat, lon, start_date, end_date,
+        )
         try:
             marine_json, weather_json = await self._fetch(marine_params, weather_params)
             steps = self._map_steps(marine_json, weather_json, window)
@@ -175,6 +179,15 @@ class OpenMeteoMarineProvider:
         )
         marine_resp.raise_for_status()
         weather_resp.raise_for_status()
+
+        logger.debug(
+            "Open-Meteo responses: marine=%d (%d bytes), weather=%d (%d bytes)",
+            marine_resp.status_code,
+            len(marine_resp.content),
+            weather_resp.status_code,
+            len(weather_resp.content),
+        )
+
         marine_json: dict[str, object] = marine_resp.json()
         weather_json: dict[str, object] = weather_resp.json()
         return marine_json, weather_json

@@ -1,0 +1,12 @@
+[Unit]
+Description=BrizoCast auto-deploy (pull + rebuild + restart)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/brizocast
+ExecStart=/opt/brizocast/deploy.sh
+User=pi
+StandardOutput=journal
+StandardError=journal

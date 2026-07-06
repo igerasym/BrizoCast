@@ -113,6 +113,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///data/brizocast.db"
     SCHEDULER_INTERVAL_MINUTES: int = Field(default=60, ge=1)
 
+    # Logging verbosity: DEBUG, INFO, WARNING, ERROR, CRITICAL.
+    LOG_LEVEL: str = "INFO"
+    # Optional path to a log file (rotated). The admin panel tails this file.
+    LOG_FILE: str = "data/brizocast.log"
+
     # --- Forecast / geocoding ---------------------------------------------- #
     FORECAST_PROVIDER: str = "open_meteo_marine"  # default (Req 15.5)
     GEOCODING_PROVIDER: str = "open_meteo_geocoding"

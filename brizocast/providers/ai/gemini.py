@@ -116,11 +116,34 @@ class GeminiProvider:
                 cannot be parsed into a valid preset.
         """
         prompt = self._build_prompt(region, activity_key)
+        self._log.info(
+            "generating AI preset for region=%r activity=%r (model=%s)",
+            region,
+            activity_key,
+            self._model,
+        )
+        import time as _time
+
+        from brizocast.services.health_tracker import tracker
+
+        _t0 = _time.monotonic()
         try:
             raw = await self._generate_text(prompt)
         except ProviderRequestError:
+            _elapsed_ms = (_time.monotonic() - _t0) * 1000.0
+            tracker.record_failure(
+                "ai:gemini",
+                message=f"failed for region={region!r}",
+                response_ms=_elapsed_ms,
+            )
             raise
         except Exception as exc:  # noqa: BLE001 - any SDK failure must degrade.
+            _elapsed_ms = (_time.monotonic() - _t0) * 1000.0
+            tracker.record_failure(
+                "ai:gemini",
+                message=str(exc)[:80],
+                response_ms=_elapsed_ms,
+            )
             self._log.warning(
                 "Gemini request failed for region=%r activity=%r: %s",
                 region,
@@ -133,7 +156,25 @@ class GeminiProvider:
                 provider=self.key,
             ) from exc
 
-        return self._parse_preset(raw, region=region, activity_key=activity_key)
+        preset = self._parse_preset(raw, region=region, activity_key=activity_key)
+        _elapsed_ms = (_time.monotonic() - _t0) * 1000.0
+        tracker.record_success(
+            "ai:gemini",
+            message=f"preset for {region!r} (score={preset.min_alert_score})",
+            response_ms=_elapsed_ms,
+        )
+        self._log.info(
+            "AI preset generated for region=%r in %.0f ms: "
+            "wave %.1f-%.1fm, period %.0fs, wind <=%.0f km/h, min_score=%s",
+            region,
+            _elapsed_ms,
+            preset.min_wave_m,
+            preset.max_wave_m,
+            preset.min_period_s,
+            preset.max_wind_kmh,
+            preset.min_alert_score,
+        )
+        return preset
 
     # -- prompt / SDK seam --------------------------------------------------- #
 

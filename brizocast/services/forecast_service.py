@@ -114,7 +114,27 @@ class ForecastService:
         else:
             log.debug("forecast cache expired; refetching from provider")
 
-        forecast = await self._provider.get_forecast(spot.lat, spot.lon, window)
+        import time as _time
+
+        from brizocast.services.health_tracker import tracker
+
+        _t0 = _time.monotonic()
+        try:
+            forecast = await self._provider.get_forecast(spot.lat, spot.lon, window)
+        except Exception:
+            _elapsed_ms = (_time.monotonic() - _t0) * 1000.0
+            tracker.record_failure(
+                f"forecast:{self._provider.key}",
+                message=f"failed for {spot.spot_key}",
+                response_ms=_elapsed_ms,
+            )
+            raise
+        _elapsed_ms = (_time.monotonic() - _t0) * 1000.0
+        tracker.record_success(
+            f"forecast:{self._provider.key}",
+            message=f"{len(forecast.steps)} steps for {spot.spot_key}",
+            response_ms=_elapsed_ms,
+        )
         expires_at = now + self._ttl
         await self._cache.put(
             spot.spot_key,
@@ -122,5 +142,10 @@ class ForecastService:
             fetched_at=now,
             expires_at=expires_at,
         )
-        log.debug("stored forecast in cache (expires_at=%s)", expires_at)
+        log.info(
+            "forecast fetched: %d step(s) in %.0f ms (cached until %s)",
+            len(forecast.steps),
+            _elapsed_ms,
+            expires_at.isoformat(timespec="minutes"),
+        )
         return forecast

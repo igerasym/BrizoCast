@@ -32,12 +32,24 @@ from brizocast.models.config_override import ConfigOverride
 if TYPE_CHECKING:
     from brizocast.core.container import SessionFactory
 
-__all__ = ["OVERRIDE_KEYS", "ConfigOverrideStore", "OverrideAwareSettings"]
+__all__ = [
+    "OVERRIDE_KEYS",
+    "VALID_LOG_LEVELS",
+    "ConfigOverrideStore",
+    "OverrideAwareSettings",
+]
 
 
 # The set of setting names the panel may override at runtime. Every other field
 # proxies straight through to the validated ``.env`` ``Settings`` object.
-OVERRIDE_KEYS = frozenset({"MONETIZATION_ENABLED", "PLAN_LIMITS", "FORECAST_PROVIDER"})
+OVERRIDE_KEYS = frozenset(
+    {"MONETIZATION_ENABLED", "PLAN_LIMITS", "FORECAST_PROVIDER", "LOG_LEVEL"}
+)
+
+# Valid logging levels the panel may select.
+VALID_LOG_LEVELS = frozenset(
+    {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+)
 
 
 def _coerce_bool(value: object) -> bool:
@@ -135,6 +147,16 @@ class OverrideAwareSettings:
     async def forecast_provider(self) -> str:
         """Resolve the forecast provider id, override-first else ``.env`` (Req 7.3)."""
         return str(await self._resolve("FORECAST_PROVIDER", self._base.FORECAST_PROVIDER))
+
+    async def log_level(self) -> str:
+        """Resolve the log level, override-first else ``.env``.
+
+        Falls back to the ``.env`` ``LOG_LEVEL`` when no override is persisted or
+        when the stored value is not a recognised level name.
+        """
+        raw = await self._resolve("LOG_LEVEL", self._base.LOG_LEVEL)
+        level = str(raw).strip().upper()
+        return level if level in VALID_LOG_LEVELS else self._base.LOG_LEVEL
 
     async def _resolve(self, key: str, default: object) -> object:
         """Return the persisted override for ``key`` if present, else ``default``."""

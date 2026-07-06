@@ -26,5 +26,10 @@ env/
 # OS / editor
 .DS_Store
 data/
+
+# IDE / tooling (not part of the project)
+.kiro/
+.vscode/
+.idea/
 .kiro/
 .vscode/

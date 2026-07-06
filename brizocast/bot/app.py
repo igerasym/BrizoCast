@@ -55,6 +55,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine
+from telegram import Update
 from telegram.ext import Application, ApplicationBuilder, BaseHandler, ContextTypes
 
 from brizocast.activities.bootstrap import register_builtin_activities
@@ -154,6 +155,12 @@ PLAN_EXPIRY_INTERVAL_HOURS: Final = 24
 # so a long forecast pass never delays command pickup.
 ADMIN_COMMAND_DRAIN_JOB_ID: Final = "admin-command-drain"
 ADMIN_COMMAND_DRAIN_INTERVAL_MINUTES: Final = 1
+
+# The id and cadence of the log-level sync job. Reads the LOG_LEVEL override
+# from the shared DB and applies it to the running bot's logger, so a level
+# chosen in the admin panel takes effect within a minute without a restart.
+LOG_LEVEL_SYNC_JOB_ID: Final = "log-level-sync"
+LOG_LEVEL_SYNC_INTERVAL_MINUTES: Final = 1
 
 # Private ``bot_data`` keys under which the bootstrap stashes the loop-bound
 # runtime collaborators for the lifecycle hooks to pick up.
@@ -497,7 +504,61 @@ def build_application(settings: Settings) -> BotApplication:
         replace_existing=True,
     )
 
-    # --- handler registration (unknown-command fallback registered last) #
+    # --- log-level sync (apply admin panel's LOG_LEVEL live) ------------ #
+    _log_sync_logger = get_logger("bot.log_level_sync")
+
+    async def _sync_log_level() -> None:
+        """Apply the LOG_LEVEL override chosen in the admin panel, if changed."""
+        from brizocast.core.logging import get_log_level, set_log_level
+
+        desired = await overrides.log_level()
+        current = get_log_level()
+        if desired != current:
+            set_log_level(desired)
+            _log_sync_logger.info("log level changed: %s -> %s", current, desired)
+
+    scheduler.add_job(
+        _sync_log_level,
+        IntervalTrigger(minutes=LOG_LEVEL_SYNC_INTERVAL_MINUTES),
+        id=LOG_LEVEL_SYNC_JOB_ID,
+        max_instances=1,
+        coalesce=True,
+        replace_existing=True,
+    )
+
+    # --- health tracker: wire write-through callback to shared DB ----------- #
+    from brizocast.services.health_tracker import tracker as _health_tracker
+
+    _health_store = ConfigOverrideStore(session_factory)
+
+    async def _persist_service_health(service: str, payload: dict[str, object]) -> None:
+        """Write one service's health entry into config_overrides immediately."""
+        # Read existing snapshot, update just this service, write back.
+        current = await _health_store.get("SERVICE_HEALTH")
+        snapshot: dict[str, object] = dict(current) if isinstance(current, dict) else {}
+        snapshot[service] = payload
+        await _health_store.set("SERVICE_HEALTH", snapshot)
+
+    _health_tracker.set_persist_callback(_persist_service_health)
+
+    # Global update logger in group -1: logs every incoming message/callback
+    # without consuming it, so the Logs page shows user activity.
+    _update_log = get_logger("bot.updates")
+
+    async def _log_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        user = update.effective_user
+        username = f"@{user.username}" if user and user.username else str(user.id if user else "?")
+        if update.message and update.message.text:
+            _update_log.info("msg from %s: %s", username, update.message.text[:120])
+        elif update.message and update.message.location:
+            loc = update.message.location
+            _update_log.info("location from %s: (%.4f, %.4f)", username, loc.latitude, loc.longitude)
+        elif update.callback_query:
+            _update_log.info("callback from %s: %s", username, update.callback_query.data)
+
+    from telegram.ext import TypeHandler
+    application.add_handler(TypeHandler(Update, _log_update), group=-1)
+
     feature_handlers: list[_Handler] = [
         *build_start_handlers(user_service),
         *build_location_handlers(
@@ -557,6 +618,9 @@ def main() -> None:
         # load_settings already logged the offending field(s) (Req 15.4).
         log.critical("startup aborted: invalid configuration")
         raise SystemExit(1) from None
+
+    # Reconfigure logging with the level and file path from settings.
+    configure_logging(level=settings.LOG_LEVEL, log_file=settings.LOG_FILE)
 
     application = build_application(settings)
     # python-telegram-bot v21's run_polling resolves the loop via
