@@ -53,8 +53,8 @@ _TAXONOMY_URL: Final = "https://services.surfline.com/taxonomy"
 _SEARCH_URL: Final = "https://services.surfline.com/search/site"
 _DEFAULT_TIMEOUT_S: Final = 20.0
 _DEFAULT_USER_AGENT: Final = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-_DEFAULT_MAX_ATTEMPTS: Final = 4
-_DEFAULT_RETRY_BASE_S: Final = 0.6
+_DEFAULT_MAX_ATTEMPTS: Final = 5
+_DEFAULT_RETRY_BASE_S: Final = 2.0
 _KM_PER_DEGREE_LAT: Final = 111.0
 _SLUG_RE: Final = re.compile(r"[^a-z0-9]+")
 
@@ -214,6 +214,10 @@ class SurflineSpotCatalog:
         last_error: Exception | None = None
 
         for attempt in range(1, self._max_attempts + 1):
+            # Generate fresh headers on each retry — different fingerprint may
+            # pass Cloudflare when the previous one was blocked.
+            if attempt > 1:
+                headers = _generate_headers()
             try:
                 response = await self._request(url, params, headers)
             except httpx.HTTPError as exc:
