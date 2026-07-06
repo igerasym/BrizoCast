@@ -68,6 +68,7 @@ class HealthTracker:
             response_ms=response_ms,
         )
         self._flush(service)
+        self._flush(service)
 
     def get(self, service: str) -> ServiceStatus:
         return self._services.get(service, ServiceStatus())
