@@ -123,7 +123,9 @@ def build_onboarding_conversation(
         await user_service.get_or_create_user(tg_user.id, tg_user.username)
 
         await message.reply_text(
-            main_menu_text(), reply_markup=build_main_menu_keyboard()
+            main_menu_text(),
+            reply_markup=build_main_menu_keyboard(),
+            parse_mode="Markdown",
         )
         return ConversationHandler.END
 

@@ -201,9 +201,11 @@ def main_menu_text() -> str:
     """Render the main-menu text shown to already-onboarded users (Req 1.6)."""
 
     return (
-        "🏄 BrizoCast main menu\n"
-        "Use /add to create a subscription, /subscriptions to see them, "
-        "or /help for all commands."
+        "🏄 *BrizoCast* — surf alert bot\n\n"
+        "I monitor wave forecasts and notify you when conditions are good "
+        "at your spots.\n\n"
+        "📋 *My subscriptions* — view, add, or manage your alerts\n\n"
+        "Tap the button below to get started 👇"
     )
 
 
