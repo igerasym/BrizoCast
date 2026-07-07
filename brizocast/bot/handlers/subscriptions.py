@@ -711,8 +711,7 @@ def build_subscription_handlers(
             user_id = _db_user_id(context)
             assert user_id is not None
             location = await location_service.create_from_candidate(user_id, candidates[0], is_favorite=True)
-            if spot_ingestion is not None:
-                await spot_ingestion.ingest_near(location.lat, location.lon, ingest_radius_km)
+            # Ingestion runs inside _create_subscription_for_location (with progress).
             return await _create_subscription_for_location(update, context, location.id)
 
         # Multiple candidates — show as reply buttons
@@ -735,8 +734,7 @@ def build_subscription_handlers(
         location = await location_service.create_from_coordinates(
             user_id, msg.location.latitude, msg.location.longitude, is_favorite=True
         )
-        if spot_ingestion is not None:
-            await spot_ingestion.ingest_near(msg.location.latitude, msg.location.longitude, ingest_radius_km)
+        # Ingestion runs inside _create_subscription_for_location (with progress).
         return await _create_subscription_for_location(update, context, location.id)
 
     async def add_pick_candidate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -757,8 +755,7 @@ def build_subscription_handlers(
         assert user_id is not None
         _user_data(context).pop("_candidates", None)
         location = await location_service.create_from_candidate(user_id, chosen, is_favorite=True)
-        if spot_ingestion is not None:
-            await spot_ingestion.ingest_near(location.lat, location.lon, ingest_radius_km)
+        # Ingestion runs inside _create_subscription_for_location (with progress).
         return await _create_subscription_for_location(update, context, location.id)
 
     async def _create_subscription_for_location(
