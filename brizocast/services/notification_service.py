@@ -156,6 +156,20 @@ class NotificationService:
                 subscription_id, spot_key, forecast_window_key
             )
 
+    async def latest_for_spot_on_date(
+        self, subscription_id: int, spot_key: str, date_str: str
+    ) -> NotificationSent | None:
+        """Return the most recent record for (sub, spot) on a UTC date.
+
+        Used to suppress duplicate daily alerts — one alert per spot per day.
+        ``date_str`` is ``"YYYY-MM-DD"`` UTC.
+        """
+        async with session_scope(self._session_factory) as session:
+            repo = SqlAlchemyNotificationRepository(session, logger=self._log)
+            return await repo.latest_for_spot_on_date(
+                subscription_id, spot_key, date_str
+            )
+
     async def records_since(
         self, subscription_id: int, since: datetime
     ) -> list[NotificationSent]:

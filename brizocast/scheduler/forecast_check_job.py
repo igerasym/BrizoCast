@@ -519,22 +519,37 @@ class ForecastCheckJob:
         failed = 0
         if plan.immediate:
             top_dispatch = max(plan.immediate, key=lambda d: d.score_result.score)
-            requests, dispatches = await self._build_requests((top_dispatch,), best_step, best_offshore)
-            results = await self._sender.send_batch(requests)
-            for dispatch, send_result in zip(dispatches, results, strict=True):
-                if send_result.delivered:
-                    # Req 9.2 — persist the record only after a successful send.
-                    await self._notifications.record_sent(
-                        dispatch.subscription_id,
-                        dispatch.spot_key,
-                        dispatch.score_result,
-                        sent_at=now,
-                    )
-                    dispatched += 1
-                else:
-                    # Req 10.4 — retries exhausted: defer the alert to the digest.
-                    digest_items.append(dispatch.item)
-                    failed += 1
+
+            # Day-based dedup: skip if we already sent an alert for this spot today.
+            window_start = top_dispatch.score_result.forecast_window.start
+            forecast_date_str = window_start.astimezone(UTC).date().isoformat()
+            already_today = await self._notifications.latest_for_spot_on_date(
+                top_dispatch.subscription_id,
+                top_dispatch.item.spot.spot_key,
+                forecast_date_str,
+            )
+            if already_today is not None:
+                sub_log.debug(
+                    "skipping duplicate alert for spot %s on %s (already sent score=%s)",
+                    top_dispatch.item.spot.spot_key,
+                    forecast_date_str,
+                    already_today.surf_score,
+                )
+            else:
+                requests, dispatches = await self._build_requests((top_dispatch,), best_step, best_offshore)
+                results = await self._sender.send_batch(requests)
+                for dispatch, send_result in zip(dispatches, results, strict=True):
+                    if send_result.delivered:
+                        await self._notifications.record_sent(
+                            dispatch.subscription_id,
+                            dispatch.spot_key,
+                            dispatch.score_result,
+                            sent_at=now,
+                        )
+                        dispatched += 1
+                    else:
+                        digest_items.append(dispatch.item)
+                        failed += 1
 
         buffered = tuple(digest_items)
         if buffered and self._digest_sink is not None:

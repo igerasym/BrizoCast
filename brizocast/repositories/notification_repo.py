@@ -29,17 +29,34 @@ class SqlAlchemyNotificationRepository(SqlAlchemyRepository[NotificationSent]):
     async def latest(
         self, subscription_id: int, spot_key: str, forecast_window_key: str
     ) -> NotificationSent | None:
-        """Return the most recent record for the (sub, spot, window) identity.
-
-        Ordered by ``sent_at`` then ``id`` descending so the newest record wins
-        even when two records share a timestamp (Req 9.3-9.5).
-        """
+        """Return the most recent record for the (sub, spot, window) identity."""
         result = await self._session.execute(
             select(NotificationSent)
             .where(
                 NotificationSent.subscription_id == subscription_id,
                 NotificationSent.spot_key == spot_key,
                 NotificationSent.forecast_window_key == forecast_window_key,
+            )
+            .order_by(NotificationSent.sent_at.desc(), NotificationSent.id.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def latest_for_spot_on_date(
+        self, subscription_id: int, spot_key: str, date_str: str
+    ) -> NotificationSent | None:
+        """Return the most recent record for (sub, spot) on a given UTC date.
+
+        ``date_str`` is ``"YYYY-MM-DD"`` UTC. Used to suppress duplicate alerts
+        for the same spot on the same calendar day (different hour windows).
+        """
+        result = await self._session.execute(
+            select(NotificationSent)
+            .where(
+                NotificationSent.subscription_id == subscription_id,
+                NotificationSent.spot_key == spot_key,
+                # forecast_window_key starts with the ISO date e.g. "2026-07-09T..."
+                NotificationSent.forecast_window_key.like(f"{date_str}%"),
             )
             .order_by(NotificationSent.sent_at.desc(), NotificationSent.id.desc())
             .limit(1)
